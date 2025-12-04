@@ -1,0 +1,14 @@
+*
+!/src/
+!/src/*/
+!/src/*/Makefile
+!/src/*/src/*
+!/*.sh
+!/LICENSE
+!/Makefile
+!/README.md
+.**
+!/.github/
+!/.github/**
+!/.gitattributes
+!/.gitignore
