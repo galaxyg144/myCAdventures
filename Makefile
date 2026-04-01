@@ -9,19 +9,35 @@
 #   To compile with debug mode and the address sanitizer enabled, pass DEBUG=y ASAN=y             #
 #     Example:                                   make -j$(nproc) DEBUG=y ASAN=y                   #
 #                                                                                                 #
+#   IMPORTANT FILE NAMING RULES:                                                                  #
+#     - File names can only have a-z, A-Z, 0-9, _, -, and .                                       #
+#     - C files must end with .c                                                                  #
+#     - C header files should end with .h                                                         #
+#                                                                                                 #
+#   When using for a collection of projects:                                                      #
+#     - Make individual directories for each project                                              #
+#     - In each directory, make a Makefile with the following contents:                           #
+#         BIN := myprogram                                                                        #
+#         include ../Makefile                                                                     #
+#     - Replace 'myprogram' with the file name you want (remember the naming rules)               #
+#     - You can specify more variables; read the comments in the 'SETUP AND PREP' section below   #
+#     - You can now run the same make commands above in each subdir                               #
+#                                                                                                 #
 #>-----------------------------------------------------------------------------------------------<#
 
 # === SETUP AND PREP ===
 
 # name of the executable to output
-# !!! REPLACE 'myprogram' WITH YOUR PROGRAM'S NAME !!!
+# !!! REPLACE 'myprogram' WITH THE NAME OF THE BINARY YOU WANT TO MAKE,
+# !!! REMEMBER THE FILE NAMING RULES ABOVE
+BIN ?= myprogram
 
 # directory containing the source files
-SRCDIR := src
+SRCDIR ?= src
 # directory to output the object files
-OBJDIR := obj
+OBJDIR ?= obj
 # directory to output the executable
-OUTDIR := .
+OUTDIR ?= .
 
 # adds "release" or "debug" to the object files path
 ifneq ($(DEBUG),y)
@@ -59,10 +75,8 @@ LDLIBS +=
 
 # if called with DEBUG=y
 ifeq ($(DEBUG),y)
-    # enable debug symbols, switch to the debug optimization mode, enable the address sanitizer, and add some more warning flags
-    CFLAGS += -g -Og -fsanitize=address -Wdouble-promotion
-    #CFLAGS += -Wconversion
-    LDFLAGS += -fsanitize=address
+    # enable debug symbols, switch to the debug optimization mode, and add some more warning flags
+    CFLAGS += -g -Og -Wdouble-promotion
 # otherwise
 else
     # enable a stable optimization mode (O2),
@@ -73,7 +87,7 @@ endif
 # if called with ASAN=y
 ifeq ($(ASAN),y)
     # enable the address sanitizer during compiling
-    CFLAGS += -fsanitize=address
+    CFLAGS += -fsanitize=address -fno-omit-frame-pointer
     # and during linking
     LDFLAGS += -fsanitize=address
 endif
@@ -88,7 +102,7 @@ define mkdir
 if [ ! -d '$(1)' ]; then echo 'Creating $(1)/...'; mkdir -p '$(1)'; fi; true
 endef
 define rm
-if [ -f '$(1)' ]; then echo 'Removing $(1)/...'; rm -f '$(1)'; fi; true
+if [ -f '$(1)' ]; then echo 'Removing $(1)...'; rm -f '$(1)'; fi; true
 endef
 define rmdir
 if [ -d '$(1)' ]; then echo 'Removing $(1)/...'; rm -rf '$(1)'; fi; true
@@ -121,7 +135,7 @@ $(OBJDIR):
 # compile the .c files into .o object files
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(call deps,$(SRCDIR)/%.c) | $(OBJDIR) $(OUTDIR)
 	@echo Compiling $<...
-	@$(_CC) $(CFLAGS) -Wall -Wextra -I$(PSRCDIR) -DPSRC_REUSABLE $(CPPFLAGS) $< -c -o $@
+	@$(_CC) $(CFLAGS) $(CPPFLAGS) $< -c -o $@
 	@echo Compiled $<
 
 # link the .o object files into an executable
